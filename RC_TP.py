@@ -63,28 +63,15 @@ Gi = taufen * alpha_i  * Afen * E
 
 
 matrix_A = [
-    [-2 * ( Ke + Kw) / Cw , 2 * Ki / Cw , 0],
+    [-2 * ( Ke + Kw) / Cw , 2 * Kw / Cw , 0],
     [2 * Kw / Cw , -2 * (Kw + Ki) / Cw , 2 * Ki / Cw],
-    [0, Ki / Ci, (Ki- m_dot) / Ci]
+    [0, Ki / Ci, - (m_dot + Ki) / Ci]
 ]
 
 matrix_B = [
     [2 * Ke / Cw , 2 / Cw, 0],
     [0, 0, 2 / Cw],
     [m_dot / Ci, 0, 0]
-]
-
-
-matrix_A1 = [
-    [-2 / Cw * (1 / Ke + 1 / Kw), 2 / (Cw * Ki), 0],
-    [2 / (Cw * Kw), -2 / Cw * (1 / Kw + 1 / Ki), 2 / (Cw * Ki)],
-    [0, 1 / (Ci * Ki), 1 / (Ci * Ki) - 1 / m_dot]
-]
-
-matrix_B1 = [
-    [2 / (Cw * Ke), 2 / Cw, 0],
-    [0, 0, 2 / Cw],
-    [1 / (Ci * m_dot), 0, 0]
 ]
 
 index = 0
