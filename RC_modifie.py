@@ -74,19 +74,6 @@ matrix_B = [
     [2 / Cw, 0, 2 * Ke / Cw ]
 ]
 
-
-matrix_A1 = [
-    [-2 / Cw * (1 / Ke + 1 / Kw), 2 / (Cw * Ki), 0],
-    [2 / (Cw * Kw), -2 / Cw * (1 / Kw + 1 / Ki), 2 / (Cw * Ki)],
-    [0, 1 / (Ci * Ki), 1 / (Ci * Ki) - 1 / m_dot]
-]
-
-matrix_B1 = [
-    [2 / (Cw * Ke), 2 / Cw, 0],
-    [0, 0, 2 / Cw],
-    [1 / (Ci * m_dot), 0, 0]
-]
-
 index = 0
 
 def RC_model(t, X, matrix_A, matrix_B, Tex, Tc, Ge, Gi):
@@ -123,7 +110,7 @@ sol = solve_ivp(RC_model, t_span, X0, t_eval=t_eval, args=(matrix_A, matrix_B, T
 
 # Extract the solution
 time = sol.t
-T_w_e, T_w_i, T_a = sol.y
+T_a, T_w_i, T_w_e = sol.y
 
 # Plotting the results
 
