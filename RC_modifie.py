@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+import pandas as pd
+from scipy.interpolate import interp1d
 
 
 ###------------- Variables-----------------####
@@ -22,18 +24,18 @@ Kw = 25.0e-3  # Thermal resistance of walls (kW/K)
 Ki = 3.2      # Internal thermal resistance (kW/K)
 m_dot = 55.0e-3  # Infiltration rate (kW/K)
 
-Tc_c = [15, 15, 15, 15, 16, 18, 19, 19, 19, 19, 16, 15,
+Tc = [15, 15, 15, 15, 16, 18, 19, 19, 19, 19, 16, 15,
       15, 15, 15, 16, 18, 19, 19, 19, 19, 16, 15, 15]   # setpoint temperature
 
-Tc_k = list(map(lambda x: x + 273, Tc_c)) #  conversion from Celcius to Kelvin
+#Tc_k = list(map(lambda x: x + 273, Tc_c)) #  conversion from Celcius to Kelvin
 
 
 # Variables for test
 
 # -- Tex simulation 
 time = np.linspace(0, 23, 24)  
-temperature_max = 22 + 273
-temperature_min = 5 + 273
+temperature_max = 22 
+temperature_min = 5 
 h_peak = 14  # time of maximal temp
 
 #  Temperture function
@@ -47,17 +49,14 @@ width = 6  # peak width
 # Solar radiation function
 E = amplitude * np.exp(-((time - half_day) ** 2) / (2 * width ** 2))
 
-Twe = 6 + 273   # Ex. Twe 
-Twi = 14 + 273  # Ex. Twi 
-Ta =  14 + 273   # Ex. Twa 
+Twe = 14   # Ex. Twe 
+Twi = 14   # Ex. Twi 
+Ta =  14   # Ex. Twa 
 X0 = [Ta, Twi, Twe]   # Initial condition
 
 
 ###------------- MODELO -----------------####
 
-
-Ge = alpha_e * Ae / (2 * E)
-Gi = taufen * alpha_i  * Afen * E
 
 """ The model is the resolved from: """
 
@@ -74,30 +73,32 @@ matrix_B = [
     [2 / Cw, 0, 2 * Ke / Cw ]
 ]
 
-index = 0
+E_func = interp1d(np.arange(len(E)), E, kind='linear', fill_value="extrapolate")
+Tex_func = interp1d(np.arange(len(Tex)), Tex, kind='linear', fill_value="extrapolate")
+Tc_func = interp1d(np.arange(len(Tc)),Tc,kind='linear', fill_value="extrapolate")
+power = []
 
-def RC_model(t, X, matrix_A, matrix_B, Tex, Tc, Ge, Gi):
-    global index
+def RC_model(t, X, matrix_A, matrix_B, Tex, Tc,):
+  
 
-    if index >= len(time):
-        index = len(time) - 1
-
-    Tex_t = Tex[index]
-    Ge_t = Ge[index]
-    Gi_t = Gi[index]
-
-    if X[2] > Tc_k[index]:
+    E_t = E_func(t)
+    Tex_t = Tex_func(t)
+    Tc_t = Tc_func(t)
+  
+    if X[0] > Tc_t:
         P_t = 0
     else:
         P_t = 4
 
+    power.append(P_t)
+    Ge_t = alpha_e * Ae / (2 * E_t) if E_t != 0 else 0
+    Gi_t = taufen * alpha_i * Afen * E_t
+
     D = np.array([P_t / Ci, 0, 0])
     C = np.array([Ge_t, Gi_t, Tex_t ])
 
-    print(index, P_t, Tc_k[index], X[2])
-    index += 1
-    
-    return matrix_A @ X + matrix_B @ C + D
+        
+    return matrix_A @ X + matrix_B @ C + D 
 
 
 # Time interval for evaluation
@@ -106,14 +107,13 @@ t_eval = time
 
 
 # Solve the system
-sol = solve_ivp(RC_model, t_span, X0, t_eval=t_eval, args=(matrix_A, matrix_B, Tex, Tc_k, Ge, Gi))
+sol = solve_ivp(RC_model, t_span, X0, t_eval=t_eval, args=(matrix_A, matrix_B, Tex, Tc))
 
 # Extract the solution
 time = sol.t
 T_a, T_w_i, T_w_e = sol.y
 
 # Plotting the results
-
 
 fig, ax = plt.subplots(3, 1, sharex=True, figsize=(6, 8))  
 
@@ -124,15 +124,15 @@ ax[0].set_ylabel("Temperature (K)")
 ax[0].set_title("Evolution of Temperatures Over Time")
 ax[0].legend()
 ax[0].grid()
-ax[0].label_outer()  # Oculta etiquetas del eje X si comparte eje
+ax[0].label_outer() 
 
-ax[1].plot(time, Tc_k, label="Setpoint Temperature")
+ax[1].plot(time, Tc, label="Setpoint Temperature")
 ax[1].plot(time, Tex, label="External Temperature")
 ax[1].set_ylabel("Temperature (K)")
 ax[1].set_title("Setpoint and External Temperature Over Time")
 ax[1].legend()
 ax[1].grid()
-ax[1].label_outer()  # Oculta etiquetas del eje X si comparte eje
+ax[1].label_outer() 
 
 ax[2].plot(time, E, label="Solar Radiation", color='orange')
 ax[2].set_xlabel("Time")
@@ -140,7 +140,7 @@ ax[2].set_ylabel("Solar Radiation (kW/m²)")
 ax[2].set_title("Solar Radiation Over Time")
 ax[2].legend()
 ax[2].grid()
-
-# Ajustar diseño
 plt.tight_layout()
 plt.show()
+
+print(len(power), power)
